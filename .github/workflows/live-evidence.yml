@@ -34,13 +34,18 @@ jobs:
           sleep 3
           ffmpeg -y -hide_banner -loglevel error -f x11grab -draw_mouse 1 -video_size 1280x720 -framerate 12 -i :99 -c:v libx264 -preset ultrafast -pix_fmt yuv420p -movflags +faststart proof/Real_Local_Browser_Demo_No_Live_Sarvam.mp4 >/tmp/hg-ffmpeg.log 2>&1 &
           VIDEO_PID=$!
-          node scripts/ci-browser-demo.mjs
+          EXIT=0
+          node scripts/ci-browser-demo.mjs || EXIT=$?
           sleep 1
           kill -INT "$VIDEO_PID" || true
           wait "$VIDEO_PID" || true
           kill "$SERVER_PID" "$XVFB_PID" || true
-          test -s proof/Real_Local_Browser_Demo_No_Live_Sarvam.mp4
+          if ! test -s proof/Real_Local_Browser_Demo_No_Live_Sarvam.mp4; then
+            echo "::error::No video was recorded"
+            exit 1
+          fi
           ffprobe -v error -show_entries format=duration,size -of default=noprint_wrappers=1 proof/Real_Local_Browser_Demo_No_Live_Sarvam.mp4
+          exit "$EXIT"
       - name: Probe public production site without a real Sarvam request
         continue-on-error: true
         run: node scripts/probe-public.mjs

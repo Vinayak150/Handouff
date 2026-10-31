@@ -1,0 +1,13 @@
+{
+  "schema": "handoffguard-recovery-demo/v1",
+  "engineVersion": "recovery-2026-10-31.2",
+  "reportHash": "7553ff5bfdee7806c793868636c8fcb91d172de7479cd1e24fcdadcfd2444575",
+  "decisions": [
+    {
+      "findingIndex": 0,
+      "decision": "accept",
+      "explanation": "Reviewed synthetic status change; no source amount changed"
+    }
+  ],
+  "advisoryTranslationIncluded": false
+}

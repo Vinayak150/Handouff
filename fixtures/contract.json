@@ -1,0 +1,1 @@
+{"keyColumn":"record_id","requiredColumns":["record_id","customer","status","amount"],"editableColumns":["status"]}

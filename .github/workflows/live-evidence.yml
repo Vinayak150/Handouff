@@ -19,6 +19,14 @@ jobs:
           node-version: '22'
       - name: Install browser controller only; use preinstalled Chrome
         run: npm install --no-save --package-lock=false playwright-core@1.56.1
+      - name: Install FFmpeg only if absent (free runner)
+        run: |
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
+          command -v ffmpeg
+          command -v ffprobe
       - name: Record real local browser interactions on synthetic data
         run: |
           set -Eeuo pipefail
@@ -41,6 +49,9 @@ jobs:
           wait "$VIDEO_PID" || true
           kill "$SERVER_PID" "$XVFB_PID" || true
           if ! test -s proof/Real_Local_Browser_Demo_No_Live_Sarvam.mp4; then
+            echo "::group::Recorder diagnostics"
+            cat /tmp/hg-ffmpeg.log || true
+            echo "::endgroup::"
             echo "::error::No video was recorded"
             exit 1
           fi

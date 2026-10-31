@@ -1,0 +1,6 @@
+.sarvam-panel { display: grid; gap: 0.55rem; margin-top: 1rem; padding: 1rem; border: 1px solid currentColor; border-radius: 0.7rem; min-width: 0; }
+.sarvam-panel p, .sarvam-panel h3 { margin: 0; overflow-wrap: anywhere; }
+.sarvam-panel input, .sarvam-panel button { font: inherit; max-width: 100%; padding: 0.55rem; }
+.sarvam-panel button:focus-visible, .sarvam-panel input:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+.sarvam-panel p[lang="mr"] { white-space: pre-wrap; }
+@media (max-width: 600px) { .sarvam-panel { padding: 0.75rem; } }

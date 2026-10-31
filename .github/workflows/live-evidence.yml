@@ -1,0 +1,53 @@
+name: Public site and real browser evidence (free runner)
+on:
+  push:
+    paths:
+      - 'vercel.json'
+      - 'scripts/ci-browser-demo.mjs'
+      - 'scripts/probe-public.mjs'
+      - '.github/workflows/live-evidence.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  evidence:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser controller only; use preinstalled Chrome
+        run: npm install --no-save --package-lock=false playwright-core@1.56.1
+      - name: Record real local browser interactions on synthetic data
+        run: |
+          set -Eeuo pipefail
+          mkdir -p proof
+          CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          export CHROME_BIN
+          echo "Installed browser: $CHROME_BIN"
+          python3 -m http.server 8878 --directory public --bind 127.0.0.1 >/tmp/hg-http.log 2>&1 &
+          SERVER_PID=$!
+          Xvfb :99 -screen 0 1280x720x24 -nolisten tcp >/tmp/hg-xvfb.log 2>&1 &
+          XVFB_PID=$!
+          export DISPLAY=:99
+          sleep 3
+          ffmpeg -y -hide_banner -loglevel error -f x11grab -draw_mouse 1 -video_size 1280x720 -framerate 12 -i :99 -c:v libx264 -preset ultrafast -pix_fmt yuv420p -movflags +faststart proof/Real_Local_Browser_Demo_No_Live_Sarvam.mp4 >/tmp/hg-ffmpeg.log 2>&1 &
+          VIDEO_PID=$!
+          node scripts/ci-browser-demo.mjs
+          sleep 1
+          kill -INT "$VIDEO_PID" || true
+          wait "$VIDEO_PID" || true
+          kill "$SERVER_PID" "$XVFB_PID" || true
+          test -s proof/Real_Local_Browser_Demo_No_Live_Sarvam.mp4
+          ffprobe -v error -show_entries format=duration,size -of default=noprint_wrappers=1 proof/Real_Local_Browser_Demo_No_Live_Sarvam.mp4
+      - name: Probe public production site without a real Sarvam request
+        continue-on-error: true
+        run: node scripts/probe-public.mjs
+      - name: Upload browser recording and redacted live evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: handoffguard-browser-and-hosted-proof
+          path: proof/
+          retention-days: 7

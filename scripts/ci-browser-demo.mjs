@@ -1,0 +1,50 @@
+// Real Chromium run on standard public GitHub runner; synthetic CSV only.
+// The Sarvam API is NOT contacted.
+import assert from 'node:assert/strict';
+import {execFileSync} from 'node:child_process';
+import {mkdirSync,readFileSync} from 'node:fs';
+import {chromium} from 'playwright-core';
+mkdirSync('proof',{recursive:true});
+const executablePath=process.env.CHROME_BIN;
+assert.ok(executablePath,'CHROME_BIN is required');
+const browser=await chromium.launch({headless:false,executablePath,args:['--no-sandbox','--disable-dev-shm-usage','--window-size=1280,720']});
+try{
+ const context=await browser.newContext({viewport:{width:1280,height:720},acceptDownloads:true,deviceScaleFactor:1});
+ const page=await context.newPage();
+ const errors=[];
+ page.on('pageerror',e=>errors.push(e.message));
+ await page.goto('http://127.0.0.1:8878/',{waitUntil:'networkidle',timeout:20000});
+ assert.match(await page.title(),/HandoffGuard/);
+ await page.screenshot({path:'proof/01-landing.png'});
+ await page.locator('#sample-blocked').click();
+ await page.locator('#analyze').click();
+ assert.match(await page.locator('#status').innerText(),/BLOCKED/);
+ assert.equal(await page.locator('#export').isDisabled(),true);
+ await page.locator('.finding').first().click();
+ assert.match(await page.locator('#assistant').innerText(),/Marathi/);
+ await page.screenshot({path:'proof/02-blocked.png'});
+ await page.waitForTimeout(2700);
+ await page.locator('#sample-reviewable').click();
+ await page.locator('#analyze').click();
+ assert.match(await page.locator('#status').innerText(),/Review eligible/);
+ await page.locator('.finding').first().click();
+ await page.screenshot({path:'proof/03-reviewable.png'});
+ await page.waitForTimeout(2100);
+ await page.locator('#review textarea').fill('Synthetic demo: permitted status update checked against the original handoff.');
+ await page.locator('#review button',{hasText:'Accept'}).click();
+ assert.equal(await page.locator('#export').isEnabled(),true);
+ await page.screenshot({path:'proof/04-review-approved.png'});
+ await page.waitForTimeout(1900);
+ const downloaded=page.waitForEvent('download');
+ await page.locator('#export').click();
+ const file=await downloaded;
+ await file.saveAs('proof/review-packet-synthetic-browser.json');
+ const packet=JSON.parse(readFileSync('proof/review-packet-synthetic-browser.json','utf8'));
+ assert.equal(packet.advisoryTranslationIncluded,false);
+ const verified=JSON.parse(execFileSync('node',['cli.cjs','verify','--original','fixtures/original.csv','--returned','fixtures/returned-reviewable.csv','--contract','fixtures/contract.json','--packet','proof/review-packet-synthetic-browser.json'],{encoding:'utf8'}));
+ assert.equal(verified.verified,true);
+ assert.deepEqual(errors,[],'browser page errors');
+ await page.screenshot({path:'proof/05-export-replay.png'});
+ await page.waitForTimeout(2300);
+ console.log('REAL_LOCAL_BROWSER_DEMO_PASS: blocked, reviewable, advisory panel, decision, downloaded packet, independent CLI replay; provider NOT called');
+}finally{await browser.close()}

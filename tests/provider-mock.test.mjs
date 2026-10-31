@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createTranslationHandler } from '../functions/api/sarvam/translate.js';
 import { getApprovedTemplate, TEMPLATE_VERSION } from '../functions/_shared/templates.js';
-import { createTranslationClient } from '../browser/sarvam-assistance.js';
+import { createTranslationClient } from '../public/sarvam-assistance.js';
 
 const origin = 'https://handoffguard.pages.dev';
 const token = 't'.repeat(48);

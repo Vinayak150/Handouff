@@ -1,31 +1,17 @@
-# Original-source reconciliation: blocked pending Git commit and actual files
+# Source reconciliation — GitHub repository now initialized; original cohort baseline missing
 
-**As-of:** 2026-10-31. **Status: UNVERIFIED.** Do not relabel this independently reconstructed reference engine as the team's original cohort engine or a merge into `main`.
+**As-of:** 2026-10-31. **Original baseline equivalence:** UNVERIFIED. **Public GitHub source publication:** verified independently after all code transfer (commit SHA in release manifest).
 
-## Identified but not retrieved
+- GitHub connector confirmed `Vinayak150/Handouff` was a public EMPTY repository on `main` with no commits (Git tree and commits endpoints returned HTTP 409). This means no original project was overwritten, and there was no earlier Git history to reconcile.
+- On 31 October 2026 a provenance-only README was committed first at `49bd0a6a874fbd17b8383c7245eee09919a6f87c`, followed by the **independently reconstructed** recovery reference code, tests, fixtures and documentation on `main`.
+- Do **not** label these commits a historical cohort baseline. The previously reviewed full HandoffGuard cohort ZIP still cannot be accessed, so a baseline-to-team feature-by-feature diff remains MISSING.
+- The reconstruction supports CSV only; any historical TSV/worker/server/CLI behavior absent from this repository must be reconciled when the original source is available.
+- **Web deployment:** a public repository is not a running URL. Refer to verification status for any separately observed Vercel/Cloudflare URL. Provider live verification requires a privately configured Sarvam credential and consented supervised test.
 
-- Repository: `https://github.com/Vinayak150/Handouff`
-- Connected Git metadata search reports owner `Vinayak150`, repository `Handouff`, branch `main`, public visibility.
-- **HEAD SHA:** NOT RETRIEVED. **Repository file tree and Git history:** NOT RETRIEVED.
-- This model's execution container could not resolve `github.com`: `git ls-remote ...` failed with `Could not resolve host`. The web fetcher returned cache miss for the GitHub repo and `raw.githubusercontent.com`; the connector available here exposed repository metadata, not file contents.
-- Prior original ZIP from this conversation was unavailable in this runtime; this revision is not an evidence-backed descendant of it.
+## Next operator actions
 
-## Exact steps for a team member with repository access
-
-```sh
-git clone https://github.com/Vinayak150/Handouff.git
-cd Handouff
-git branch --show-current
-git rev-parse HEAD
-git status --short
-find . -maxdepth 2 -type f | sort
-# Do not copy secrets or provide authentication tokens in chat.
-```
-
-Before changing anything, archive the source commit and run its own tests. Obtain the cohort baseline archive/commit separately. Compare baseline → current GitHub → this recovery reference, file-by-file, focusing on `engine.js`, `session.js`, `worker.js`, independent `cli.cjs`, fixture contracts, source chronology and license. In particular, the reconstruction is **CSV-specific** and may omit behavior from the historical source.
-
-Create a feature branch such as `integration/sarvam-cloudflare` only after this comparison. Preserve the original engine or justify any changes with paired browser/CLI tests and fresh replay fixtures. Review all Git history/branches for keys before publishing. No branch or pull request has been created here.
-
-## Promotion gate
-
-Never deploy this recovery reference *over* the existing public repository without a documented and reviewed source-selection decision. No commit SHA and no evidence of baseline-to-team changes means the original lineage is **MISSING**.
+1. Clone the repository, capture `git rev-parse HEAD`, inspect all sources and run `npm run verify` on Node 22.
+2. Obtain the real cohort baseline; diff features and independent replay behavior before asserting lineage or feature parity.
+3. Inspect GitHub Actions; do not assume a passed local test means hosted CI passed.
+4. Verify private environment bindings without exposing their values; perform a single supervised provider call only if free credits and spending constraints are confirmed.
+5. Conduct human Marathi comprehension and workflow testing, capture consent and provenance, then update the evidence-led pitch.

@@ -1,0 +1,10 @@
+Selected Format: Open Source & Innovation
+
+Problem Statement:
+When one team returns an edited CSV to another, the receiving reviewer needs a repeatable way to detect forbidden changes, document permitted changes, and independently verify the final handoff.
+
+Public GitHub: https://github.com/Vinayak150/Handouff
+Running prototype: NOT VERIFIED / NOT AVAILABLE. The repository address is not a hosted URL.
+
+Setup and limitations:
+Node.js >=22. Extract the source ZIP, run `npm test`, `npm run scenarios`, `npm run build`, then serve `dist` locally with `python3 -m http.server 8878`. The Python server runs only static analysis/review/export; Sarvam translation requires Cloudflare Pages Functions plus encrypted `SARVAM_API_KEY` and `HANDOFFGUARD_DEMO_TOKEN` bindings. The Sarvam translation path has only mocked provider tests. No real provider request, public deployment, original cohort-code reconciliation, participant study or payer validation is claimed. CSV content and review packets must not be sent to Sarvam; only fixed English finding templates are sent on a deliberate opt-in request. The demo uses synthetic fixtures. The MP4 is an illustrative narrated-by-slides walkthrough, not a hosted end-to-end screen recording.

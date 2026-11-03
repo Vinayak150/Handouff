@@ -6,9 +6,10 @@
     "test": "node --test tests/*.test.mjs",
     "scenarios": "node scripts/scenarios.mjs",
     "build": "node scripts/build-pages.mjs",
-    "verify": "npm test && npm run scenarios && npm run build && npm run audit:release",
+    "verify": "npm test && npm run scenarios && npm run build && npm run audit:release && npm run docs:check",
     "live:check": "node scripts/live-check.mjs",
-    "audit:release": "node scripts/release-audit.mjs"
+    "audit:release": "node scripts/release-audit.mjs",
+    "docs:check": "node scripts/check-doc-links.mjs"
   },
   "engines": {
     "node": ">=22"

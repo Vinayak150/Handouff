@@ -1,0 +1,59 @@
+name: Bug report
+description: Report reproducible problems using synthetic test data only.
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: "Do not upload real customer data or credentials. Security vulnerabilities must be reported privately using SECURITY.md."
+  - type: input
+    id: commit
+    attributes:
+      label: Commit or branch
+      placeholder: "main at commit SHA"
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Include commands, synthetic fixture names, and browser actions.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Component
+      options:
+        - Browser comparison
+        - Review and export
+        - CLI verification
+        - Sarvam translation
+        - Deployment or CI
+        - Documentation
+        - Other
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment and checks performed
+      description: Node version, browser, operating system, sanitized errors, and test outcomes.
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety
+      options:
+        - label: I used synthetic data and did not include credentials or confidential information.
+          required: true
+        - label: This is not an undisclosed security vulnerability.
+          required: true

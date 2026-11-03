@@ -1,59 +1,217 @@
-# HandoffGuard — WUNDERDEVS recovery reference demo (NOT original cohort source)
+# HandoffGuard
 
-**Status: hardened, independently reconstructed reference implementation, NOT DEPLOYED, LIVE SARVAM NOT VERIFIED; NOT the verified cohort baseline.**
+**Contract-driven CSV handoff verification with human-in-the-loop review and optional Marathi assistance.**
 
-The original HandoffGuard cohort ZIP remains unavailable for byte-level baseline comparison. On 31 October 2026, GitHub connector inspection confirmed `Vinayak150/Handouff` was a public, EMPTY repository with no commits; a provenance README was initialized at commit `49bd0a6a874fbd17b8383c7245eee09919a6f87c`. This README initialization does NOT constitute a source push or verified deployment. This repository is a **new independently reconstructed recovery candidate**, not a claim that the reviewed 97-test historical HandoffGuard engine or its security properties were preserved. The original source must be recovered, compared and restored before this candidate replaces it in the team submission.
+[![CI](https://github.com/Vinayak150/Handouff/actions/workflows/ci.yml/badge.svg)](https://github.com/Vinayak150/Handouff/actions/workflows/ci.yml)
+![Node.js](https://img.shields.io/badge/Node.js-%E2%89%A5%2022-339933?logo=node.js&logoColor=white)
+![Project stage](https://img.shields.io/badge/stage-recovery%20reference-667085)
 
-## User demonstration (synthetic)
+HandoffGuard compares an original CSV with a returned CSV against an explicit editing contract. It flags prohibited changes, routes permitted edits through a documented review step, and produces a review packet that can be checked independently from the command line.
 
-1. `Load blocked example` → `Analyze locally`: one forbidden amount change blocks approval, alongside one reviewable status change. Approval/export is unavailable.
-2. `Load reviewable example` → `Analyze locally`: one allowed status change requires review. Select it and enter a reason (10–500 chars), then Accept or Reject.
-3. Select the finding and click **Explain selected finding in Marathi**. The browser sends only the generic finding code, Marathi locale and a manually entered shared access code to its same-origin API. The Cloudflare Pages Function maps the code to a fixed English template and calls **Sarvam `sarvam-translate:v1`**. With no secrets configured, this intentionally fails closed; **not a canned Marathi success**.
-4. `Export review packet` and independently verify with `cli.cjs` using the original + returned CSV + contract.
+> [!IMPORTANT]
+> **Provenance and readiness:** This repository contains an **independently reconstructed recovery reference**, not a verified copy of the original WUNDERDEVS HandoffGuard cohort implementation. The original baseline has not been reconciled. A public deployment and a real Sarvam provider call have **not been verified**. Use the supplied synthetic fixtures for demonstrations; do not treat this project as a production-approved compliance system.
 
-Do not use real user/customer files in a public demonstration or third-party chat. The demo fixtures are synthetic.
+**Jump to:** [Features](#features) · [Quick start](#quick-start) · [Example workflow](#example-workflow) · [CLI verification](#independent-cli-verification) · [Architecture](#architecture) · [Deployment](#deployment) · [Security](#security-and-data-handling)
 
-## Reproduce on Node 22+
+## Why HandoffGuard?
 
-```sh
-npm test
-npm run scenarios
+Spreadsheet and CSV handoffs are easy to get wrong: a collaborator may change a protected field, remove a record, alter a key, or make a legitimate edit without recording why. HandoffGuard separates these cases using deterministic rules rather than letting an AI model decide whether a change is acceptable.
+
+| Input | Purpose |
+| --- | --- |
+| **Original CSV** | Baseline records before the handoff |
+| **Returned CSV** | Records received after the handoff |
+| **Editing contract (JSON)** | Record key, required columns, and fields that may be edited |
+
+The output is a set of **blockers** (changes that prevent approval) and **review findings** (permitted changes requiring a human decision).
+
+## Features
+
+- **Contract-based validation:** Detects missing or unexpected columns, blank or duplicate keys, row membership changes, and modifications to protected fields.
+- **Deterministic change classification:** A prohibited edit is a blocker; a change to an explicitly editable field requires review.
+- **Human review gate:** Eligible findings must be accepted or rejected with a 10–500 character explanation before export.
+- **Fail-closed workflow:** Blockers disable approval/export, and changes to the input invalidate the previous review state.
+- **Portable review evidence:** Exports a JSON packet containing review decisions and a SHA-256 report digest.
+- **Independent verification:** `cli.cjs` re-analyzes the original inputs and checks a packet without importing the browser engine.
+- **Optional Marathi guidance:** An explicit user action can request a Sarvam translation of an approved generic finding template. Translation is advisory and cannot change the verification outcome.
+- **Test and release tooling:** Node-based tests, synthetic scenarios, static build checks, CI, and an opt-in hosted smoke test.
+
+## Quick start
+
+**Requirements:** Node.js **22 or newer**; Python 3 is optional for serving the static build. The core verification/build scripts use Node built-ins and do not require installing npm dependencies.
+
+```bash
+git clone https://github.com/Vinayak150/Handouff.git
+cd Handouff
+
+# Run tests, synthetic scenarios, build, and release asset audit.
+npm run verify
+
+# Serve the generated static application.
+python3 -m http.server 8878 --directory dist --bind 127.0.0.1
+```
+
+Open **http://127.0.0.1:8878/** in your browser.
+
+> [!NOTE]
+> The Python server hosts static assets only. It does **not** execute the serverless Sarvam endpoint. CSV analysis, review, and export work without provider credentials; Marathi assistance requires a separately configured Function.
+
+## Example workflow
+
+1. Click **Load blocked example**, then **Analyze locally**. A forbidden amount edit produces a blocker, so a review packet cannot be exported.
+2. Click **Load reviewable example**, then **Analyze locally**. The permitted status edit appears as a review finding.
+3. Select the finding, enter a meaningful reason (10–500 characters), and choose **Accept** or **Reject**.
+4. Click **Export review packet** to download `review-packet.json`.
+5. Independently verify that exported packet using the original CSV, returned CSV, and contract as shown below.
+
+Both examples are included in `fixtures/`. The included `review-packet-synthetic.json` is fixture data, **not** evidence of a human-signed approval.
+
+### Editing contract
+
+The sample contract in [`fixtures/contract.json`](fixtures/contract.json) is:
+
+```json
+{
+  "keyColumn": "record_id",
+  "requiredColumns": ["record_id", "customer", "status", "amount"],
+  "editableColumns": ["status"]
+}
+```
+
+Here, `record_id` identifies each record, all four columns must exist, and only `status` can change without producing a blocker. Even a permitted status change still requires a review decision.
+
+## Independent CLI verification
+
+The command-line tool uses a separate implementation of the comparison logic, providing a second path for analyzing the same files and replaying a review packet.
+
+**Analyze a blocked handoff:**
+
+```bash
+node cli.cjs analyze \
+  --original fixtures/original.csv \
+  --returned fixtures/returned-blocked.csv \
+  --contract fixtures/contract.json
+```
+
+Expected exit code: **2** (blocker present).
+
+**Analyze a reviewable handoff:**
+
+```bash
+node cli.cjs analyze \
+  --original fixtures/original.csv \
+  --returned fixtures/returned-reviewable.csv \
+  --contract fixtures/contract.json
+```
+
+Expected exit code: **0** (no blocker; review finding present).
+
+**Verify the supplied synthetic packet:**
+
+```bash
+node cli.cjs verify \
+  --original fixtures/original.csv \
+  --returned fixtures/returned-reviewable.csv \
+  --contract fixtures/contract.json \
+  --packet fixtures/review-packet-synthetic.json
+```
+
+Expected exit code: **0**, with `"verified": true`. For a packet exported from the browser, replace `--packet` with the downloaded file path. Verification fails if the packet no longer matches the analyzed data or does not contain valid decisions for all required review findings.
+
+The digest is a **tamper-evident consistency check**, not a digital signature, authenticated reviewer identity, or proof that a person approved the data.
+
+## Architecture
+
+```mermaid
+flowchart TD
+    A["Original CSV + Returned CSV + JSON contract"] --> B["Browser comparison engine"]
+    B --> C{"Any blocking findings?"}
+    C -->|Yes| D["Block approval and export"]
+    C -->|No| E["Human review of permitted edits"]
+    E --> F["Decisions + explanations"]
+    F --> G["Review packet + SHA-256 report digest"]
+    G --> H["Independent CLI replay"]
+    E -. "Optional approved finding code" .-> I["Protected serverless endpoint"]
+    I -. "Fixed generic template" .-> J["Sarvam English-to-Marathi translation"]
+    J -. "Advisory explanation only" .-> E
+```
+
+| Component | Responsibility |
+| --- | --- |
+| [`public/engine.js`](public/engine.js) | Browser CSV parsing, contract validation, deterministic findings, and report digest |
+| [`public/app.js`](public/app.js) and [`public/session.js`](public/session.js) | User interaction, review state, and packet export |
+| [`public/sarvam-assistance.js`](public/sarvam-assistance.js) | Optional client-side explanation UI |
+| [`functions/api/sarvam/translate.js`](functions/api/sarvam/translate.js) | Cloudflare Pages Function for protected translation requests |
+| [`functions/_shared/templates.js`](functions/_shared/templates.js) | Allowlisted, versioned English finding templates |
+| [`api/sarvam/translate.js`](api/sarvam/translate.js) | Optional Vercel serverless adapter |
+| [`cli.cjs`](cli.cjs) | Independent analysis and packet replay |
+| [`tests/`](tests) and [`scripts/`](scripts) | Regression tests, scenario checks, build, and release tooling |
+| [`fixtures/`](fixtures) | Synthetic inputs, editing contract, and demonstration packet |
+
+**Stack:** Vanilla JavaScript, HTML, CSS, Node.js 22+, Cloudflare Pages Functions, optional Vercel adapter, and Sarvam translation API.
+
+## Development and testing
+
+| Command | What it checks |
+| --- | --- |
+| `npm test` | Automated engine, security configuration, provider-mock, and adapter tests |
+| `npm run scenarios` | Blocked and reviewable synthetic handoff flows |
+| `npm run build` | Copies the allowlisted static assets into `dist/` |
+| `npm run audit:release` | Release/public asset audit |
+| `npm run verify` | Runs all four checks above in sequence |
+| `npm run live:check` | Opt-in check against a separately configured HTTPS deployment |
+
+GitHub Actions configuration is in [`.github/workflows/ci.yml`](.github/workflows/ci.yml). Tests use mocked provider responses; **passing tests do not establish live provider or hosted deployment readiness**.
+
+## Deployment
+
+**Cloudflare Pages** is the documented reference deployment path:
+
+1. Run `npm run verify` locally.
+2. Connect the repository to Cloudflare Pages with the framework set to **None**, build command `npm run build`, and output directory `dist`.
+3. Keep `functions/` at the repository root so Cloudflare can deploy the API route.
+4. Add `SARVAM_API_KEY` and `HANDOFFGUARD_DEMO_TOKEN` as private encrypted server-side secrets **only** if running a supervised translation demo.
+5. Verify the deployed static application, response headers, blocked/reviewable flow, wrong-token behavior, and any explicitly authorized live provider call.
+
+For a **local Pages Function** test (instead of the static-only Python server):
+
+```bash
 npm run build
-cd dist && python3 -m http.server 8878 --bind 127.0.0.1
+npx wrangler pages dev dist
 ```
 
-Open `http://127.0.0.1:8878/`. The Python server is **static-only** and cannot execute the Sarvam Function; the English findings, review and export still work. For a real local Pages Function, use Wrangler as documented in `docs/DEPLOYMENT.md` and configure secrets privately.
+Wrangler may require setup and private local `.dev.vars` values. Do not commit secrets. The repository also contains an optional Vercel adapter, but its presence does not imply that either hosting platform has been deployed or validated.
 
-Independent CLI (different implementation from `public/engine.js`):
+See [Deployment runbook](docs/DEPLOYMENT.md), [Configuration reference](CONFIGURATION.md), and [Release proof gates](docs/RELEASE_PROOF_GATES.md).
 
-```sh
-node cli.cjs analyze --original fixtures/original.csv --returned fixtures/returned-blocked.csv --contract fixtures/contract.json
-# expected exit code 2: one blocker
-node cli.cjs analyze --original fixtures/original.csv --returned fixtures/returned-reviewable.csv --contract fixtures/contract.json
-# expected exit code 0: one review finding
-node cli.cjs verify --original fixtures/original.csv --returned fixtures/returned-reviewable.csv --contract fixtures/contract.json --packet fixtures/review-packet-synthetic.json
-# expected exit code 0: verified true
-```
+## Security and data handling
 
-`review-packet-synthetic.json` is test evidence, not a human-signed packet. Report digests are tamper-evident consistency checks, **not cryptographic signatures or reviewer identity proofs**.
+The browser performs CSV comparison locally. Under the implemented translation flow, only an allowlisted **finding code**, the target language, and a transient demo access token reach the serverless API. The provider is sent a fixed generic English template, **not** CSV rows, filenames, review notes, or arbitrary user text. Translated text never enters review decisions or exported packets.
 
-## Source layout
+Important boundaries:
 
-- `public/`: 10 browser/Pages public assets, including Cloudflare `_headers` and `_routes.json`
-- `functions/api/sarvam/translate.js`: server-only provider endpoint; secret values are never bundled
-- `functions/_shared/templates.js`: fixed code-to-English-text allowlist
-- `cli.cjs`: independent deterministic CLI and replay
-- `tests/`: deterministic core, security config, mock Sarvam and parity tests
-- `fixtures/`: synthetic CSVs, contract and review packet
-- `verification/`: observed test/build/CLI outputs and environment limitations
-- `docs/`: hosting, security, publication preview, release gates and team evidence status
+- **No accounts or reviewer identity verification.** The demo token is a shared access gate, not user authentication.
+- **No cryptographic signatures or persistent audit log.** The report hash checks consistency, not nonrepudiation.
+- **No global request quota.** The serverless in-memory limiter is a soft per-isolate guard, not a provider spend cap.
+- **No verified production deployment or real Sarvam call.** Hosted privacy and provider behavior still require operator validation.
+- **CSV-focused scope.** The current browser UI does not support XLSX, and it is not a general-purpose reconciliation engine.
 
-**Required before replacing GitHub `main`:** inspect original cohort and current repo, establish pinned SHAs, compare features and licenses, merge/port non-regressively, run original test suite, verify real Sarvam and hosted flow, have human Marathi/user reviewers review, and review public release boundaries. This ZIP is a usable independent test candidate, **not the originally supplied full HandoffGuard**.
+Do not process sensitive customer data or publicly enable paid provider requests without an approved security, privacy, and cost-control review.
 
-## 2026-10-31 security hardening revision
+More detail: [Security model](docs/SECURITY_MODEL.md) · [Release security checklist](docs/RELEASE_SECURITY_CHECKLIST.md).
 
-This package is `recovery-2026-10-31.2`, a recovery reference rather than an audited replacement for the original HandoffGuard. Its browser engine and independent CLI explicitly block and identify contract-required columns missing from the original file. Selecting a local file immediately invalidates any earlier exportable report, and superseded asynchronous reads are ignored. A fresh synthetic review packet is supplied for v.2; previous recovery v.1 packets are intentionally not replay-equivalent across engine versions.
+## Project status and provenance
 
-Verification performed here: `npm test` 38/38 PASS, `npm run scenarios` 2/2 PASS, `npm run build` PASS, `npm run audit:release` PASS, independent positive/negative CLI replay exits as expected, `npm run live:check` without URL exits 2 / LIVE NOT VERIFIED. Evidence under `verification/phase11-*` and `verification/hardening-verification.json`. See `docs/SOURCE_RECONCILIATION_STATUS.md` and `docs/HUMAN_EVIDENCE_COLLECTION.md`.
+This codebase is a **reconstructed technical reference**. The original WUNDERDEVS cohort baseline is unavailable for a source-level comparison, so equivalence to the historical application or its earlier test counts **must not be assumed**. Source reconciliation, live Sarvam verification, deployment evidence, human Marathi review, and release approval remain separate gates.
 
-**Release decision: NOT DEPLOYED, REFERENCE SOURCE NOT VERIFIED ON GITHUB, NOT A FINAL TEAM SUBMISSION.** No real provider call or hosted browser test was performed. Human interview, payer and Marathi review evidence are not available.
+For evidence and known gaps, refer to [Source reconciliation](docs/SOURCE_RECONCILIATION_STATUS.md), [Implementation handoff](IMPLEMENTATION_HANDOFF.md), and [Submission status](docs/SUBMISSION_STATUS.md). Some historical handoff documents describe earlier snapshots and should not be read as current runtime proof.
+
+## Contributing and licensing
+
+Bug reports and focused pull requests are welcome for review. Keep changes small, include tests for new behavior, and run `npm run verify` before opening a PR.
+
+**License:** No root `LICENSE` has been approved or added. Public visibility does not grant reuse or redistribution rights. See [OSS license review](docs/OSS_LICENSE_REVIEW.md) for the outstanding ownership and licensing decisions.
+
+---
+
+Maintained in [`Vinayak150/Handouff`](https://github.com/Vinayak150/Handouff).

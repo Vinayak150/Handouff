@@ -1,0 +1,34 @@
+name: Feature request
+description: Propose a focused improvement to this recovery reference.
+title: "[Feature]: "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      description: Describe a concrete handoff or developer workflow limitation.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Use synthetic examples where useful.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: textarea
+    id: risks
+    attributes:
+      label: Compatibility and security considerations
+      description: Mention browser/CLI parity, human review gating, data privacy, and provider costs if applicable.
+  - type: checkboxes
+    id: caveat
+    attributes:
+      label: Project scope
+      options:
+        - label: I understand this repository is a reconstructed reference, not the verified historical cohort implementation.
+          required: true

@@ -78,7 +78,7 @@ The sample contract in [`fixtures/contract.json`](fixtures/contract.json) is:
 }
 ```
 
-Here, `record_id` identifies each record, all four columns must exist, and only `status` can change without producing a blocker. Even a permitted status change still requires a review decision.
+Here, `record_id` identifies each record, all four columns must exist, and only `status` can change without producing a blocker. Even a permitted status change still requires a review decision. See the [contract and finding reference](docs/CONTRACT_REFERENCE.md) for validation rules, severity mapping, and input limits.
 
 ## Independent CLI verification
 
@@ -158,6 +158,7 @@ flowchart TD
 | `npm run scenarios` | Blocked and reviewable synthetic handoff flows |
 | `npm run build` | Copies the allowlisted static assets into `dist/` |
 | `npm run audit:release` | Release/public asset audit |
+| `npm run docs:check` | Verify internal Markdown file and directory links |
 | `npm run verify` | Runs all four checks above in sequence |
 | `npm run live:check` | Opt-in check against a separately configured HTTPS deployment |
 
@@ -204,11 +205,13 @@ More detail: [Security model](docs/SECURITY_MODEL.md) · [Release security check
 
 This codebase is a **reconstructed technical reference**. The original WUNDERDEVS cohort baseline is unavailable for a source-level comparison, so equivalence to the historical application or its earlier test counts **must not be assumed**. Source reconciliation, live Sarvam verification, deployment evidence, human Marathi review, and release approval remain separate gates.
 
-For evidence and known gaps, refer to [Source reconciliation](docs/SOURCE_RECONCILIATION_STATUS.md), [Implementation handoff](IMPLEMENTATION_HANDOFF.md), and [Submission status](docs/SUBMISSION_STATUS.md). Some historical handoff documents describe earlier snapshots and should not be read as current runtime proof.
+For a dated snapshot of verified repository checks, see [Current repository status](docs/CURRENT_STATUS.md). For evidence and known gaps, refer to [Source reconciliation](docs/SOURCE_RECONCILIATION_STATUS.md), [Implementation handoff](IMPLEMENTATION_HANDOFF.md), and [Submission status](docs/SUBMISSION_STATUS.md). Some historical handoff documents describe earlier snapshots and should not be read as current runtime proof.
 
 ## Contributing and licensing
 
-Bug reports and focused pull requests are welcome for review. Keep changes small, include tests for new behavior, and run `npm run verify` before opening a PR.
+Read [CONTRIBUTING.md](CONTRIBUTING.md) before proposing a change. Use the [issue templates](.github/ISSUE_TEMPLATE) for reproducible bug reports and feature requests, and the [pull request checklist](.github/pull_request_template.md) when submitting code. Run `npm run verify` before opening a PR.
+
+To report potentially exploitable vulnerabilities, follow [SECURITY.md](SECURITY.md), rather than disclosing sensitive information publicly.
 
 **License:** No root `LICENSE` has been approved or added. Public visibility does not grant reuse or redistribution rights. See [OSS license review](docs/OSS_LICENSE_REVIEW.md) for the outstanding ownership and licensing decisions.
 
